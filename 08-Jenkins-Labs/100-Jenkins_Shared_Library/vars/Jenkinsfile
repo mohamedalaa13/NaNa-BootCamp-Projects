@@ -1,0 +1,38 @@
+#!/usr/bin/env groovy
+@Library('jenkins-shared-library')
+
+def groovy
+
+pipeline {
+    agent any
+
+    tools {
+      maven 'Maven'
+    }
+
+    stages {
+
+        stage ('Init Groovy') {
+            steps {
+                script {
+                    groovy = load "script.groovy"
+                }
+            }
+        }
+        stage('Build Jar') {
+            steps {
+                script {
+                   build_jar()
+            }
+          }
+        }
+
+        stage('Build Image') {
+            steps {
+               script {
+                   build_image( '139646/java-maven-app:4.0')
+               }
+            }
+        }
+    }
+}

@@ -1,0 +1,97 @@
+// This is the Build: http://localhost:2020/job/First_Pipeline/6/
+
+def gv
+
+pipeline {
+    agent any
+
+    environment {
+        Test_ENV= 'test_1'
+    }
+
+    parameters{  
+       booleanParam(name: 'executeTest', defaultValue: true, description: 'this is to execute tests') 
+       choice(name: 'Version', choices: ['1.0.0', '1.0.1', '1.1.0'], description: 'there are version choices')  
+   }
+
+
+    stages {
+
+        stage("Groovy Init") {
+            steps {
+                script {
+                    //Define the file of groovy script
+                    gv = load "script.groovy"
+                }
+            }
+        }
+        stage("Env Var") {
+            steps {
+                script {
+                    echo "env.BRANCH_NAME"
+                    echo "Test_Env_is: ${Test_ENV}"
+                }
+            }
+        }
+        stage("Credentials") {
+            steps {
+                script {
+                    withCredentials{[
+                       usernamePassword(credentials: 'test_credentials', usernameVariable: User_Name, passwordVariable: Passwd)     
+                  ]}
+                }
+            }
+        }
+        stage("Parameter Boolean") {
+            steps {
+
+                when {
+                  expression {
+                     params.executeTest == true
+                  }
+                }
+                script {
+                    echo "Parameter Boolean is true ${params.executeTest}"
+                }
+            }
+        }
+        stage("Parameter Choice") {
+            steps {
+
+                when {
+                    expression {
+                        params.Version == '1.0.1'
+                    }
+                }
+                script {
+                    echo "Param choice is true ${params.Version}"
+                }
+            }
+        }
+
+        stage("Test Groovy") {
+            steps {
+                script {
+                    gv.deployApp()
+                }
+            }
+        }
+
+        stage("Deploy Env") {
+
+            input {
+                message "Choose the Env to deploy in"
+                ok "Done"
+                parameters {
+                    choice(name: 'ENV', choices: ['DEV', 'TEST', 'PROD'], description: 'there are ENV choices')
+                }
+
+            }
+            steps {
+                script {
+                   echo "This is the ENV: ${ENV}"
+                }
+            }
+        }
+    }   
+}
