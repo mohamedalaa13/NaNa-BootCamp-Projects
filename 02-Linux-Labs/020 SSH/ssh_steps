@@ -1,0 +1,25 @@
+1-#Remote Server
+   1- Create Remote Server "EC2" for example
+   2- SSH the REmote Server => $ssh roor@159.86.13.4   #public_ip of Remote Server
+
+2-#My Client Machine
+   1- Create Key Pairs => $ssh-keygen -t rsa  
+   2- $ls .ssh     #You will find ("id_rsa" and "id_rsa.pub")
+   3- $cat .ssh/id_rsa.pub
+
+3-#Remote Server
+   1- $cd .ssh     #You will find ("authorized_keys" file)
+   2- put what u copied from (3- $cat .ssh/id_rsa.pub) in "authorized_keys"
+
+4-#My Client Machine
+   1- $ssh roor@159.86.13.4     => We will connect directly because we have the private key
+      $ssh -i .ssh/id_rsa root@159.86.13.4     => here i specify the path of the private key
+
+--------------------------------------------------------------------------------------------------------------------
+
+1-#On my Local Machine
+   1-$vim script.sh
+       #!/bin/bash
+       echo "Hello Remote Sever ....."
+   2- $scp script.sh root@159.86.13.4:/root/scripts  => This will copy the script.sh from local to remote sever "scp is secure copy"
+   
