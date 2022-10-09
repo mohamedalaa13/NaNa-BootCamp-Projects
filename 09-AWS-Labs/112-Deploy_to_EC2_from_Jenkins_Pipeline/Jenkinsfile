@@ -1,0 +1,40 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    agent any
+   
+    stages {
+
+        stage ('Test') {
+            steps {
+                script {
+                   echo "Testing the App" 
+                }
+            }
+        }
+
+        stage ('Build') {
+            steps {
+                script {
+                   echo "Building the App" 
+                }
+            }
+        }
+
+        stage ('Deploy') {
+            steps {
+                script {
+                   echo "Deploying the App to EC2 ....." 
+
+                   def dockerCmd = 'docker run --name nana-demo -p 3080:80 -d 139646/react-nodejs:2.0.0'
+
+                   sshagent(['ec2-server-key']) {
+                       sh "ssh -o StrictHostKeyChecking=no ubuntu@ec2-3-120-159-168.eu-central-1.compute.amazonaws.com ${dockerCmd}"
+                   }
+                   echo "Image deployed to EC2 successfuly!"
+                }
+            }
+        }
+
+    }
+}
