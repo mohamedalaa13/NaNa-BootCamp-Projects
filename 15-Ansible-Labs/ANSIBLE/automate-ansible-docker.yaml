@@ -1,0 +1,118 @@
+---
+- name: Wait for ssh connection
+  hosts: all
+  tasks:
+    - name: Ensure ssh port is open
+      #Module to wait till this port is open on EC2
+      wait_for:
+        port: 22
+        delay: 20
+        timeout: 120
+        search_regex: OpenSSH
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+      vars:
+        ansible_connection: local
+
+
+- name: Install python3
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure python3 is installed
+      yum:
+        name: python3
+        update_cache: yes
+        state: present
+
+
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure docker is installed
+      yum:
+        name: docker
+        update_cache: yes
+        state: present 
+
+
+- name: Install Docker and Docker-Compose Python Module
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install docker and docker-compose with Pip
+      pip:
+        name: 
+        - docker
+        - docker-compose
+
+- name: Start Docker Service
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure docker service is running 
+      systemd:
+        name: docker
+        state: started
+      
+
+- name: Add ec2-user to docker group
+  hosts: all
+  become: yes
+  tasks:
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        group: docker
+        append: yes                                #to append this group to other groups this user is part of
+    #restart server so that the docker group is added to the user
+    - name: Restart the server 
+      meta: reset_connection
+
+
+# - name: Test Docker installation
+#   hosts: all
+#   tasks:
+#     - name: Pull Redis Image
+#       community.docker.docker_image:
+#           name: redis
+#           source: pull
+#       register: test_docker
+#     - name: Show output of docker pull command
+#       debug: msg={{test_docker}}
+
+- name: Install docker-compose
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install docker-compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-{{lookup('pipe', 'uname -m')}}          #the lookup here tells ansible that this is a command you run and add the output in this url
+        dest: /usr/local/bin/docker-compose
+        mode: +x                                #Adding execute mode to the downloaded file
+
+
+- name: Start Docker Container
+  hosts: all
+  #Enter the DockerHub password when running the ansible-playbook
+  vars_prompt:
+    - name: dockerHub_passwd
+      prompt: Enter the DockerHub account Password
+  tasks:
+    - name: Copy docker-compose file to remote server
+      copy:
+        src: /Users/awaden/docker-compose.yaml
+        dest: /home/ec2-user/docker-compose.yaml
+    #Need to login to dockerHub account as this Image is private
+    - name: Login to DockerHub
+      docker_login:
+        registry_url: https://index.docker.io/v1/
+        username: 139646
+        password: "{{dockerHub_passwd}}"
+      register: dockerHub_login_status
+    - name: Show status of DockerHub login
+      debug: msg={{dockerHub_login_status}}
+    - name: Start Conatiners from docker-compose
+      docker_compose:
+        project_src: /home/ec2-user
+        state: present                                       #docker-compose up     #absent => docker-compose down

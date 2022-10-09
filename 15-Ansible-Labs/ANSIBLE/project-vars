@@ -1,0 +1,2 @@
+local_tar_file_location: ~/Downloads/simple-nodejs/nodejs-app-1.0.0.tgz
+remote_home_location: /home/ubuntu

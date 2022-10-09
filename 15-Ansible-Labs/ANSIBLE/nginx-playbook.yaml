@@ -1,0 +1,13 @@
+---
+- name: Configure Nginx WebServer
+  hosts: webServer
+  become: yes                          #To run ansible commands as a root
+  tasks:
+  - name: Install Nginx Server
+    apt: 
+      name: nginx
+      state: latest
+  - name: Start Nginx Server
+    service:
+      name: nginx
+      state: started
