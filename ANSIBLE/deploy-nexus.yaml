@@ -1,0 +1,115 @@
+---
+- name: Install Java and Net-Tools
+  hosts: nexusDeploy
+  become: yes
+  tasks:
+  - name: Update apt and cache
+    apt:
+      update_cache: yes
+      force_apt_get: yes
+      cache_valid_time: 3600
+  - name: Install java 8
+    apt:
+      name: openjdk-8-jre-headless
+  - name: Install net-tools
+    apt:
+      name: net-tools
+
+- name: Download and unpack Nexus installer
+  hosts: nexusDeploy
+  become: yes
+  tasks:
+  - name: Check if nexus folder exists
+    #Module to check existance of folders
+    stat:
+      path: /opt/nexus
+    register: exist_nexus_folder
+  - name:  Download Nexus
+    #Module to download URLs. It will download this url in this destination
+    get_url:
+      url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+      dest: /opt/
+    register: tar_file_name
+  - name: Dynamically show the tar file's name
+    debug: msg={{tar_file_name}}  
+  - name: Untar the Nexus installer Dynamically
+    unarchive:
+      src: "{{tar_file_name.dest}}"
+      dest: /opt/
+      remote_src: yes 
+    #When Condition to execute shell command only if the folder doesn't exist
+    when: not exist_nexus_folder.stat.exists 
+  - name: Find Nexus Folder
+    #Module to find a folder using a pattern
+    find:
+      paths: /opt
+      pattern: "nexus-*"                       #find any folder starts with "nexus-"  
+      file_type: directory
+    register: nexus_folder_name
+  - name: Show the Nexus Folder name
+    debug: msg={{nexus_folder_name}}
+  - name: Show if nexus folder exists
+    debug: msg={{exist_nexus_folder}} 
+  - name: Rename Nexus Folder
+    shell: mv {{nexus_folder_name.files[0].path}} /opt/nexus
+    #When Condition to execute shell command only if the folder doesn't exist
+    when: not exist_nexus_folder.stat.exists 
+                     
+- name: Create nexus user and give permissions
+  hosts: nexusDeploy
+  become: yes
+  tasks:
+  - name: Create nexus group
+    group:
+      name: nexus
+      state: present
+  - name: Create nexus User
+    user:
+      name: nexus
+      comment: this is nexus user
+      group: nexus
+  - name: Make nexus user owner of nexus folder
+    file:
+      path: /opt/nexus
+      state: directory
+      owner: nexus
+      group: nexus
+      recurse: yes                                  #represents -R in the command to apply it on all folders and files inside this folder
+  - name: Make nexus user owner of sonatype folder
+    file:
+      path: /opt/sonatype-work
+      state: directory
+      owner: nexus
+      group: nexus
+      recurse: yes 
+
+- name: Start nexus with nexus user
+  hosts: nexusDeploy
+  become: True
+  become_user: nexus
+  tasks:
+  - name: Set run_as_user nexus
+    lineinfile:                                          #lineinfile add only one line
+      path: /opt/nexus/bin/nexus.rc
+      regexp: '^#run_as_user=""'                         #regular expression to replace this line with the line below
+      line: run_as_user="nexus"
+  - name: Start nexus
+    command: /opt/nexus/bin/nexus start
+  - name: Check nexus is running successfully with ps
+    shell: ps aux | grep nexus
+    register: nexus_status
+  - name: Print the "ps aux" shell command output
+    debug: msg={{nexus_status.stdout_lines}}
+  - name: Wait till port is configured
+    #Module to make the next task waits for certain time
+    pause:
+      minutes: 1
+  - name: Check nexus is running successfully with netstat
+    shell: netstat -plnt
+    register: nexus_status
+  - name: Print the "netstat" shell command output
+    debug: msg={{nexus_status.stdout_lines}}
+  
+    
+
+

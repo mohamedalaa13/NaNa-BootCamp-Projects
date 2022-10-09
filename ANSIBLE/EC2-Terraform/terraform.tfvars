@@ -1,0 +1,7 @@
+vpc_cidr_block = "10.0.0.0/16"
+subnet_1_cidr_block = "10.0.1.0/24"
+avail_zone = "eu-central-1b"
+env_prefix = "dev"
+instance_type = "t2.micro"
+ssh_key = "/Users/awaden/.ssh/id_rsa.pub"
+my_ip = "156.201.80.65/32"

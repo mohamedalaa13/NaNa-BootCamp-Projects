@@ -1,0 +1,34 @@
+#Docker EC2 Server
+[dockerServer]
+18.185.61.180
+
+[dockerServer:vars]
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_user=ec2-user
+
+#Nexus deployment EC2
+[nexusDeploy]
+54.93.53.30
+
+[nexusDeploy:vars]
+ansible_ssh_private_key_file=~/.ssh/complete-cicd-key.pem
+ansible_user=ubuntu
+
+
+#NodeJs App Hosts
+[nodeAppServer]
+18.197.119.2
+
+[nodeAppServer:vars]
+ansible_ssh_private_key_file=~/.ssh/complete-cicd-key.pem
+ansible_user=ubuntu
+
+
+#Nginx Server Hosts
+[webServer]
+3.120.243.156
+18.156.165.78 
+
+[webServer:vars]
+ansible_ssh_private_key_file=~/.ssh/complete-cicd-key.pem
+ansible_user=ubuntu

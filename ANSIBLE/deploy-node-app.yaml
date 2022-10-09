@@ -1,0 +1,49 @@
+---
+- name: Install node and npm
+  hosts: nodeAppServer
+  become: yes
+  tasks:
+  - name: Update apt and cache
+    apt:
+      update_cache: yes
+      force_apt_get: yes
+      cache_valid_time: 3600
+  - name: Install nodejs and npm
+    apt:
+      pkg:
+        - nodejs
+        - npm 
+
+- name: Deploy nodejs nodeApp
+  hosts: nodeAppServer
+  vars_files:
+    - project-vars
+  tasks:
+  - name: Copy nodejs Folder to the Server
+    #Copy module to copy things from local to remote server
+    copy:
+      src: "{{local_tar_file_location}}"
+      dest: "{{remote_home_location}}/nodejs-app-1.0.0.tgz"
+  - name: Unpack the nodejs tar file
+    unarchive:
+      src: "{{remote_home_location}}/nodejs-app-1.0.0.tgz"
+      dest: "{{remote_home_location}}/"
+      remote_src: yes                              #means that it will look for the src jar file on the remote server
+  - name: Install App Dependencies
+    #Use npm Module and give it the location of package.json file on remote server
+    npm:
+      path: "{{remote_home_location}}/package"
+  - name: Start nodejs App
+    #change directory then run node command to start the app
+    command: 
+      chdir: "{{remote_home_location}}/package/app"
+      cmd: node server.js
+    #to make the node server.js command run in the background
+    async: 1000
+    poll: 0
+  - name: Show that App is running
+    #Shell is like command but uses more advanced like pipe
+    shell: ps aux | grep node
+    register: app_status                             #put the output of shell command in this variable so that we can print it as output
+  - name: Print the "ps aux" shell command output
+    debug: msg={{app_status.stdout_lines}}                            #put the var as a message
